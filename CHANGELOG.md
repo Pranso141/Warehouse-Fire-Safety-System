@@ -1,10 +1,11 @@
 # Detailed Project Changelog & Milestones
 
+
 This log records the complete development lifecycle, hardware bring-up, debugging findings, and architectural decisions made throughout the project.
 
 ---
 
-### [Phase 5] — November 2, 2026: Mirrored Sprinkler Bus & Active-Low Actuators
+### [Phase 5] —  Mirrored Sprinkler Bus & Active-Low Actuators
 - **Mirrored 4×4 Zone Realignment**:
   - Re-indexed the sprinkler matrix from traditional row-major sequence into the mirrored hardware format:
     $$\text{Row 0: [04, 03, 02, 01] } \quad \text{Row 1: [08, 07, 06, 05] } \quad \text{Row 2: [12, 11, 10, 09] } \quad \text{Row 3: [16, 15, 14, 13]}$$
@@ -27,7 +28,7 @@ This log records the complete development lifecycle, hardware bring-up, debuggin
 
 ---
 
-### [Phase 4] — October 25–26, 2026: Cloud MQTT Bridge & Permanent Static URL
+### [Phase 4] —  Cloud MQTT Bridge & Permanent Static URL
 - **Cloud MQTT Migration (`broker.emqx.io`)**:
   - Diagnosed local network port-1883 packet drops on `test.mosquitto.org` and migrated the pipeline to `broker.emqx.io:1883`.
   - Added background worker threading to make edge publisher connection non-blocking.
@@ -43,7 +44,7 @@ This log records the complete development lifecycle, hardware bring-up, debuggin
 
 ---
 
-### [Phase 3] — October 24, 2026: Native Bitbang RC522 SPI Driver
+### [Phase 3] —  Native Bitbang RC522 SPI Driver
 - **Custom Software SPI Implementation**:
   - Built `rc522_driver.py` using direct `gpiod` line toggling across AM67A split GPIO chips:
     - CS on Pin 11 (`gpiochip3 line 8`)
@@ -55,7 +56,7 @@ This log records the complete development lifecycle, hardware bring-up, debuggin
 
 ---
 
-### [Phase 2] — October 22–23, 2026: MLX90640 Thermal Sensor Integration
+### [Phase 2] —  MLX90640 Thermal Sensor Integration
 - **I2C-1 Bus Adapter**:
   - Created SMBus I2C bridge on `/dev/i2c-1` (device address `0x33`).
   - Implemented 768-pixel thermal frame buffer with algorithmic smoothing and out-of-range sensor filtering.
@@ -66,7 +67,7 @@ This log records the complete development lifecycle, hardware bring-up, debuggin
 
 ---
 
-### [Phase 1] — October 21, 2026: Monorepo Architecture & Real-Time Server
+### [Phase 1] —  Monorepo Architecture & Real-Time Server
 - **Monorepo Foundation**:
   - Set up pnpm workspaces with React 19 frontend, Tailwind CSS, Express 5 API server, and TypeScript schemas.
   - Implemented Socket.IO bidirectional event bus for instant state streaming.
