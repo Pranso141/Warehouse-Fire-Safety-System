@@ -1,0 +1,153 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: safety
+    description: Warehouse safety monitoring
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /safety/state:
+    get:
+      operationId: getSafetyState
+      tags: [safety]
+      summary: Get the latest warehouse sensor snapshot
+      responses:
+        "200":
+          description: Current monitoring state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafetyState"
+  /safety/events:
+    get:
+      operationId: getSafetyEvents
+      tags: [safety]
+      summary: Get recent warehouse safety events
+      responses:
+        "200":
+          description: Recent audit events, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SafetyEvent"
+  /safety/authorize-rfid:
+    post:
+      operationId: authorizeRfid
+      tags: [safety]
+      summary: Verify an RFID code against the registered allow-list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RfidCodeInput"
+      responses:
+        "200":
+          description: Whether the RFID code is registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RfidAuthorizationResult"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    SafetyState:
+      type: object
+      required: [mqttConnected, mqttUrlConfigured, lastUpdated, sensors, thermal]
+      properties:
+        mqttConnected:
+          type: boolean
+        mqttUrlConfigured:
+          type: boolean
+        lastUpdated:
+          type: ["string", "null"]
+          format: date-time
+        sensors:
+          $ref: "#/components/schemas/SensorReadings"
+        thermal:
+          $ref: "#/components/schemas/ThermalReadings"
+    SensorReadings:
+      type: object
+      required: [fire_d0, mq7_d0, mq2_d0, pir_motion]
+      properties:
+        fire_d0:
+          type: number
+        mq7_d0:
+          type: number
+        mq2_d0:
+          type: number
+        pir_motion:
+          type: number
+    ThermalReadings:
+      type: object
+      required: [max_temp, avg_temp, matrix_24x32]
+      properties:
+        max_temp:
+          type: number
+        avg_temp:
+          type: number
+        matrix_24x32:
+          type: array
+          minItems: 768
+          maxItems: 768
+          items:
+            type: number
+    SafetyEvent:
+      type: object
+      required: [id, timestamp, severity, source, message]
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        severity:
+          type: string
+          enum: [normal, warning, critical]
+        source:
+          type: string
+        message:
+          type: string
+    RfidCodeInput:
+      type: object
+      required: [uid]
+      properties:
+        uid:
+          type: string
+          minLength: 1
+          maxLength: 64
+    RfidAuthorizationResult:
+      type: object
+      required: [authorized]
+      properties:
+        authorized:
+          type: boolean
+
