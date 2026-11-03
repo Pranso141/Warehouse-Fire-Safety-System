@@ -1,33 +1,90 @@
 # Hardware Specification & 40-Pin Header Reference
 
-This document provides the complete hardware wiring, pin assignments, electric characteristics, and signal conditioning for the **BeagleY-AI Warehouse Safety & Fire Suppression Edge Gateway**.
+This document provides the complete hardware wiring, pin assignments, electric characteristics, circuit schematics, and signal conditioning for the **BeagleY-AI Warehouse Safety & Fire Suppression Edge Gateway**.
 
 ---
 
-## 1. System Architecture Block Diagram
+## 1. Complete End-to-End System Block Diagram
 
 ```mermaid
 graph TD
-    subgraph BeagleY_AI ["BeagleY-AI Edge Gateway (TI AM67A)"]
-        I2C1["I2C-1 Bus (/dev/i2c-1)"] --> MLX["MLX90640 24x32 Thermal IR"]
-        BitbangSPI["GPIO Bitbang SPI Engine"] --> RC522["RC522 13.56MHz RFID Reader"]
-        GPIO_IN["Digital Sensor Inputs (Active-Low)"] --> SENSORS["PIR, Flame D0, MQ7, MQ2"]
-        GPIO_OUT["4-Bit Active-Low Sprinkler Bus"] --> RELAY["Relay / Demux Driver (CH 00-15)"]
-        GPIO_ACT["Hazard Outputs (Active-Low)"] --> ACTUATORS["Fire & Gas Solenoid / Alarms"]
-        PY_GATEWAY["warehouse_publisher.py"] --> MQTT_PUB["MQTT Client (broker.emqx.io)"]
+    subgraph Power ["Power Supply & Distribution"]
+        PSU["DC Power Supply (5V / 3.3V / 12V)"]
+        PSU --> VCC5["5V Rail (Relays & Gas Sensors)"]
+        PSU --> VCC3["3.3V Rail (MLX90640 & RC522)"]
+        PSU --> VCC12["12V Coil Rail (Valves / Solenoids)"]
+        PSU --> GND["System Common Ground (0V)"]
     end
 
-    MQTT_PUB -->|"warehouse/beagley/telemetry"| CLOUD["EMQX Cloud Broker :1883"]
-    MQTT_PUB -->|"warehouse/beagley/rfid"| CLOUD
-    CLOUD --> API["Node.js Express Server :3000"]
-    API -->|"Socket.IO WebSocket"| WEB["React Monitoring Console"]
+    subgraph Edge ["BeagleY-AI Edge Gateway (TI AM67A)"]
+        CPU["64-bit Arm Cortex-A53 / R5F"]
+        
+        %% Thermal IR
+        I2C["I2C-1 Bus (/dev/i2c-1)"] -->|Pins 3, 5| MLX["MLX90640 24x32 Thermal Camera"]
+        
+        %% RFID SPI
+        SPI["Bitbang SPI Engine"] -->|Pins 11, 13, 15, 16, 22| RC522["RC522 13.56MHz RFID Reader"]
+        
+        %% Digital Sensor Inputs
+        IN_PIR["gpiochip2 Line 38"] -->|Pin 7| PIR["PIR Motion Detector"]
+        IN_FLAME["gpiochip2 Line 36"] -->|Pin 37| FLAME["Infrared Flame Sensor D0"]
+        IN_MQ7["gpiochip3 Line 7"] -->|Pin 36| MQ7["MQ7 Carbon Monoxide D0"]
+        IN_MQ2["gpiochip3 Line 15"] -->|Pin 29| MQ2["MQ2 Combustible Gas D0"]
+        
+        %% 4-Bit Sprinkler Bus
+        OUT_B0["gpiochip3 Line 17 (Pin 31)"] --> BUS_B0["Bit 0 (LSB)"]
+        OUT_B1["gpiochip3 Line 16 (Pin 32)"] --> BUS_B1["Bit 1"]
+        OUT_B2["gpiochip3 Line 18 (Pin 33)"] --> BUS_B2["Bit 2"]
+        OUT_B3["gpiochip3 Line 12 (Pin 35)"] --> BUS_B3["Bit 3 (MSB)"]
+        
+        %% Hazard Actuator Outputs
+        ACT_FIRE["gpiochip3 Line 10 (Pin 38)"] --> EXT_FIRE["Fire Alarm / Extinguisher Solenoid"]
+        ACT_GAS["gpiochip3 Line 9 (Pin 40)"] --> EXT_GAS["Gas Exhaust Fan / Valve"]
+        ACT_BUZZ["gpiochip1 Line 10 (Pin 18)"] --> EXT_BUZZ["Master Warning Buzzer"]
+    end
+
+    subgraph SprinklerHW ["4x4 Mirrored Sprinkler Matrix & Driver Circuit"]
+        DECODER["74HC138 Dual 3-to-8 Demultiplexers / Address Decoder"]
+        BUS_B0 & BUS_B1 & BUS_B2 & BUS_B3 -->|4-Bit Active-Low Address Bus| DECODER
+        DECODER -->|16 Active-Low Channel Triggers| TRANSISTORS["NPN Transistor Arrays (2N3904)"]
+        TRANSISTORS -->|Coil Energization| RELAYS["16-Channel 12V Relay Driver Module"]
+        RELAYS -->|Switched Common Contact to GND| NOZZLES["16 Zone Solenoid Sprinkler Valves (04..01 / 08..05 / 12..09 / 16..13)"]
+    end
+
+    subgraph CloudAndWeb ["Cloud Telemetry & Operator Console"]
+        PUB["warehouse_publisher.py (1 Hz)"] -->|MQTTS :1883| BROKER["EMQX Cloud Broker (broker.emqx.io)"]
+        BROKER -->|Ingest Stream| BACKEND["Express 5 API Server (:3000)"]
+        BACKEND -->|Socket.IO WebSocket| FRONTEND["React 19 Monitoring Dashboard (:5173 / ngrok)"]
+    end
+
+    CPU --> PUB
 ```
 
 ---
 
-## 2. 40-Pin Header Complete Pinout Matrix
+## 2. Physical Hardware Implementation
 
-All pin assignments on the BeagleY-AI standard 40-pin header are selected to prevent bus conflicts between I2C, SPI, and GPIO controllers.
+<div align="center">
+  <img src="assets/hardware_testbench.jpg" width="750" alt="Physical BeagleY-AI Sensor and Relay Test Bench"/>
+  <p><i>Physical hardware test bench: BeagleY-AI single board computer (bottom left), MLX90640 thermal sensor, RC522 RFID reader, MQ2 & MQ7 gas sensors, active-low pull-down conditioning circuitry, and 16-channel relay driver matrix (top).</i></p>
+</div>
+
+---
+
+## 3. Sprinkler Matrix Circuit Schematic
+
+The sprinkler driving circuit uses dual **74HC138** 3-to-8 line decoders coupled with **2N3904** switching transistor stages to drive 12V industrial relay coils with flyback protection diodes:
+
+<div align="center">
+  <img src="assets/sprinkler_circuit_schematic.png" width="850" alt="Proteus Simulation Schematic of 4-bit 16-zone Sprinkler Matrix"/>
+  <p><i>Proteus schematic: 4-bit digital input lines decode to 16 individual sprinkler zones (D9 to D24) through dual demultiplexers and relay coil drivers.</i></p>
+</div>
+
+---
+
+## 4. 40-Pin Header Complete Pinout Matrix
+
+All pin assignments on the BeagleY-AI standard 40-pin header are selected to avoid bus conflicts between I2C, SPI, and GPIO controllers:
 
 | Header Pin | Signal Name | SoC Controller & Line Offset | Direction | Function / Connected Peripheral | Electrical Spec |
 |:---:|:---|:---|:---:|:---|:---|
@@ -74,7 +131,7 @@ All pin assignments on the BeagleY-AI standard 40-pin header are selected to pre
 
 ---
 
-## 3. Mirrored 4×4 Sprinkler Grid & Active-Low Truth Table
+## 5. Mirrored 4×4 Sprinkler Grid & Active-Low Truth Table
 
 The physical suppression matrix is deployed as a 16-zone mirrored layout:
 
@@ -108,18 +165,3 @@ $$\text{Channel} = \text{Zone ID} - 1 \quad (0 \le \text{Channel} \le 15)$$
 | **Zone 14** | Row 3, Col 2 | `13` | `1101` | **0.0V (GND)** | **0.0V (GND)** | 3.3V (HIGH) | **0.0V (GND)** |
 | **Zone 15** | Row 3, Col 1 | `14` | `1110` | **0.0V (GND)** | **0.0V (GND)** | **0.0V (GND)** | 3.3V (HIGH) |
 | **Zone 16** | Row 3, Col 0 | `15` | `1111` | **0.0V (GND)** | **0.0V (GND)** | **0.0V (GND)** | **0.0V (GND)** |
-
----
-
-## 4. Digital Sensor & Actuator Interface Specifications
-
-### A. Digital Inputs (Sensors)
-- **Optical Flame Detector**: Pin 37 (`gpiochip2 line 36`). Infrared photodiode comparator. Active-Low D0 pulls to GND when flame IR spectrum is sensed.
-- **MQ7 CO Gas Detector**: Pin 36 (`gpiochip3 line 7`). High-sensitivity tin-oxide semiconductor. Active-Low D0 pulls to GND when CO ppm surpasses potentiometer threshold.
-- **MQ2 Combustible Gas Detector**: Pin 29 (`gpiochip3 line 15`). Detects LPG, methane, smoke, and alcohol. Active-Low D0 pulls to GND on leak detection.
-- **PIR Motion Detector**: Pin 7 (`gpiochip2 line 38`). Pyroelectric human motion detection. Outputs 3.3V pulse upon thermal movement.
-
-### B. Digital Outputs (Actuators)
-- **Fire Alarm Actuator**: Pin 38 (`gpiochip3 line 10`). Switches to **GND (0V)** when `fire_d0 == 1` or when peak thermal temperature $T_{\max} \ge 55.0^\circ\text{C}$.
-- **Gas Alarm Actuator**: Pin 40 (`gpiochip3 line 9`). Switches to **GND (0V)** when `mq7_d0 == 1` or `mq2_d0 == 1`.
-- **Master Buzzer Trigger**: Pin 18 (`gpiochip1 line 10`). Switches to **GND (0V)** during any combined fire, gas, or thermal runaway event.

@@ -1,187 +1,193 @@
 <div align="center">
 
-# 🛡️ EmberWatch: BeagleY-AI Warehouse Fire & Safety System
-### Industrial IoT Hazard Detection, Thermal Infrared Vision & 4-Bit Active-Low Sprinkler Grid
+# EmberWatch
+### Autonomous Industrial Fire & Hazardous Environment Suppression System
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-19-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
-[![Express](https://img.shields.io/badge/Express-5.2-green?style=for-the-badge&logo=express)](https://expressjs.com/)
-[![MQTT](https://img.shields.io/badge/MQTT-EMQX_Cloud-red?style=for-the-badge&logo=eclipsemosquitto)](https://www.emqx.io/)
-[![Hardware](https://img.shields.io/badge/Hardware-BeagleY--AI_AM67A-orange?style=for-the-badge&logo=beagleboard)](https://beagleboard.org/beagley-ai)
-[![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](LICENSE)
+**A hardware-software edge intelligence system powered by Texas Instruments AM67A (BeagleY-AI) featuring spatial infrared hotspot localization, active-low relay matrix control, physical RFID console gating, and worldwide zero-config remote access.**
 
-**[🌐 Live Demo URL](https://carry-freehand-uninvited.ngrok-free.dev)** &bull; **[📋 Hardware Spec](docs/HARDWARE_SPEC.md)** &bull; **[📐 Architecture Spec](docs/ARCHITECTURE.md)** &bull; **[📜 Changelog](CHANGELOG.md)**
+---
+
+[🌐 Live Console](https://carry-freehand-uninvited.ngrok-free.dev) &bull; [📋 Hardware Specs](docs/HARDWARE_SPEC.md) &bull; [📐 System Architecture](docs/ARCHITECTURE.md) &bull; [📜 Engineering Log](CHANGELOG.md)
 
 </div>
 
 ---
 
-## 📌 Executive Summary
+## Overview
 
-**EmberWatch** is an enterprise-grade, edge-to-cloud industrial warehouse safety monitoring and autonomous fire suppression gateway. Powered by the **BeagleY-AI (Texas Instruments AM67A)** single-board computer, the system continuously aggregates multi-spectral environmental telemetry, tracks high-temperature hotspots via a **768-pixel thermal infrared camera**, enforces physical **RFID access control**, and drives a **4-bit active-low binary sprinkler bus** to actuate physical sprinkler valves in a customized $4 \times 4$ mirrored zone layout.
+Industrial warehouses storing volatile chemical, logistical, or combustible inventory face high risks of localized thermal runaway before sprinkler systems activate. Traditional ceiling bulb sprinklers only trigger once ambient ceiling air hits ~68°C—often far too late to stop rapid fire propagation.
+
+**EmberWatch** solves this with an edge-driven closed-loop architecture:
+1. An edge thermal camera continuously reads a **768-point thermal matrix ($24 \times 32$)** over I2C.
+2. The BeagleY-AI calculates the exact spatial centroid of any hotspot and translates it into a **4-bit active-low binary address bus**.
+3. A custom demultiplexer relay board isolates and activates the **exact corresponding sprinkler valve** in a mirrored $4 \times 4$ layout (Zones 01 to 16) before an open flame spreads.
+4. Optical infrared flame, toxic carbon monoxide (MQ7), flammable gas (MQ2), and PIR motion sensors provide multi-tier confirmation to eliminate false triggers.
+5. Telemetry streams via **MQTT over TLS to an online broker** and synchronizes with a responsive web dashboard with **dual-credential hardware RFID authentication**.
 
 ---
 
-## 📸 System Interface Preview
+## Key Differentiators & USPs
+
+- **Pre-Combustion Thermal Spot Localization**: Detects surface overheating and localized thermal anomalies before flame breakout, reducing suppression reaction time from minutes to milliseconds.
+- **Physical Hardware Gating (No RFID, No Telemetry)**: The monitoring dashboard loads in a locked state by default. Live surveillance, thermal imaging, and sprinkler controls remain encrypted and masked until an operator taps an authorized 13.56MHz RFID badge (`5281A25C` or `5299945C`) on the reader.
+- **Single-Command Edge-to-Cloud Orchestrator (`beagley-connect.sh`)**: One shell command configures dynamic USB NAT routing on the host, programs default gateway tables on the headless BeagleY-AI, starts edge acquisition services, launches the Express/React stack, and establishes an encrypted public tunnel.
+- **Worldwide Access from Any Device**: Tunneled via a persistent static endpoint (`carry-freehand-uninvited.ngrok-free.dev`). Field engineers and plant safety managers can audit telemetry and manually override actuators securely from any smartphone or laptop without port forwarding or static public IPs.
+- **Fail-Safe Active-Low Ground Switching**: The relay driving stage uses active-low logic—lines only draw current when asserted to ground (0V). An unpowered, disconnected, or floating GPIO pin cannot accidentally trigger water valves or discharge fire suppressants.
+- **Targeted Localized Suppression vs. Flooding**: Traditional systems drench entire warehouse bays, causing immense inventory water damage. EmberWatch actuates only the single $1 \times 1$ meter grid zone above the anomaly.
+
+---
+
+## System in Action
 
 <div align="center">
 
-| Operational Overview | Thermal Infrared False-Color Vision |
+| Operational Overview (Live Telemetry) | Physical RFID Security Lockout Gate |
 | :---: | :---: |
-| <img src="docs/assets/dashboard_overview.png" width="440" alt="Operational Dashboard Overview"/> | <img src="docs/assets/thermal_heatmap.png" width="440" alt="768-pixel FLIR Ironbow Thermal Map"/> |
-| *Real-time telemetry, sensor health, and system alarms* | *24×32 thermal heat map with dynamic auto-ranging* |
+| <img src="docs/assets/dashboard_overview.png" width="460" alt="Live Operational Dashboard"/> | <img src="docs/assets/website_locked_gate.png" width="460" alt="Security Access Gate"/> |
+| *Real-time environmental feeds, 768-pixel thermal view, and actuator status* | *Restricted console requiring physical RFID card tap to reveal controls* |
 
-| Mirrored 4×4 Sprinkler Grid & Bus | Operator Security & RFID Authentication |
+| Mirrored 4×4 Sprinkler Matrix & Hardware Bus | Physical Hardware Implementation |
 | :---: | :---: |
-| <img src="docs/assets/sprinkler_grid.png" width="440" alt="Mirrored 4x4 Sprinkler Suppression Matrix"/> | <img src="docs/assets/rfid_unlock_modal.png" width="440" alt="RFID Credential Unlock Gate"/> |
-| *Active-low GPIO binary bus (Channels 00–15)* | *Physical badge gating (UIDs: 5281A25C / 5299945C)* |
+| <img src="docs/assets/sprinkler_grid.png" width="460" alt="Mirrored 4x4 Sprinkler Grid"/> | <img src="docs/assets/hardware_testbench.jpg" width="460" alt="Physical BeagleY-AI Test Bench"/> |
+| *Active-low bus decoder showing live channel, binary bits, and pin voltages* | *BeagleY-AI, thermal IR, RFID, gas sensors & 16-channel relay array* |
+
+| Proteus Driver Circuit Schematic | Operator Credential Override |
+| :---: | :---: |
+| <img src="docs/assets/sprinkler_circuit_schematic.png" width="460" alt="Driver Circuit Schematic"/> | <img src="docs/assets/rfid_unlock_modal.png" width="460" alt="RFID Verification Dialog"/> |
+| *Dual 74HC138 3-to-8 line decoders driving transistor-switched relay coils* | *Fallback manual hex UID validation interface* |
 
 </div>
 
 ---
 
-## ⚡ Core Technical Features
+## System Architecture
 
-- **MLX90640 768-Pixel Thermal Infrared Vision**:
-  - $24 \times 32$ focal plane array operating on BeagleY-AI `/dev/i2c-1` (Address `0x33`).
-  - Dynamic Ironbow false-color gradient with bilinear interpolation and floating auto-ranging ($\Delta T \ge 2.5^\circ\text{C}$).
-- **Active-Low 4-Bit Binary Sprinkler Matrix**:
-  - Mirrored physical layout:
-    $$\begin{matrix} 04 & 03 & 02 & 01 \\ 08 & 07 & 06 & 05 \\ 12 & 11 & 10 & 09 \\ 16 & 15 & 14 & 13 \end{matrix}$$
-  - Direct hardware pins: **Pin 31 (B0), Pin 32 (B1), Pin 33 (B2), Pin 35 (B3)** pulling to **GND (0V)** when active.
-- **Multi-Sensor Environmental Telemetry**:
-  - **Flame D0**: High-speed infrared optical flame detector on Pin 37 (`gpiochip2 line 36`).
-  - **MQ7 Gas D0**: Carbon monoxide toxic gas monitor on Pin 36 (`gpiochip3 line 7`).
-  - **MQ2 Gas D0**: Combustible gas, LPG, and smoke monitor on Pin 29 (`gpiochip3 line 15`).
-  - **PIR Motion**: Human evacuation / warehouse zone motion detection on Pin 7 (`gpiochip2 line 38`).
-- **Hardware-Level Active-Low Actuators**:
-  - **Fire Alarm / Extinguisher Solenoid**: Pin 38 (`gpiochip3 line 10`) pulls to GND on fire detection.
-  - **Gas Hazard / Ventilation Fan**: Pin 40 (`gpiochip3 line 9`) pulls to GND on gas leak detection.
-  - **Master Alarm Buzzer**: Pin 18 (`gpiochip1 line 10`) pulls to GND on any critical alert.
-- **Physical RC522 RFID Access Gating**:
-  - Custom bitbang SPI driver operating across split AM67A GPIO controllers.
-  - Approved security credentials: `5281A25C` (Manager) and `5299945C` (Inspector).
-  - Telemetry is masked in a locked security state until an authorized badge is tapped.
-- **Cloud MQTT & WebSocket Synchronization**:
-  - Edge gateway streams JSON telemetry to `broker.emqx.io:1883`.
-  - Express server bridges telemetry to connected browser clients via Socket.IO with $<25\text{ms}$ latency.
+```mermaid
+graph TD
+    subgraph Sensors ["Input Sensing Layer"]
+        MLX["MLX90640 (24x32 Thermal IR)"] -->|I2C-1 @ 1MHz| SBC
+        RC522["RC522 RFID (13.56 MHz)"] -->|Software Bitbang SPI| SBC
+        FLAME["Optical Flame Detector"] -->|D0 (Active-Low)| SBC
+        MQ7["MQ7 Carbon Monoxide"] -->|D0 (Active-Low)| SBC
+        MQ2["MQ2 Flammable Gas"] -->|D0 (Active-Low)| SBC
+        PIR["PIR Motion Detector"] -->|D0 (Active-High)| SBC
+    end
 
----
+    subgraph SBC ["Edge Processing (BeagleY-AI / TI AM67A)"]
+        CORE["Python 3 Edge Gateway"]
+        CORE -->|Calculates Centroid| HOTSPOT["Hotspot Coordinate (x, y)"]
+        HOTSPOT -->|Maps to Mirrored Grid| ADDR["4-Bit Zone Address (0-15)"]
+    end
 
-## 🔌 Hardware Pinout & Wiring Summary
+    subgraph Actuators ["Actuator & Driver Stage"]
+        ADDR -->|Pins 31, 32, 33, 35| DECODER["Dual 74HC138 Demultiplexers"]
+        DECODER -->|16 Active-Low Outputs| RELAYS["2N3904 Transistor + 12V Relay Array"]
+        RELAYS --> VALVES["16 Mirrored Solenoid Sprinkler Valves"]
+        CORE -->|Pin 38 (Active-Low)| FIRE_ACT["Extinguisher Actuator"]
+        CORE -->|Pin 40 (Active-Low)| GAS_ACT["Exhaust Fan Actuator"]
+        CORE -->|Pin 18 (Active-Low)| BUZZER["Master Alarm Buzzer"]
+    end
 
-All connections are mapped to the standard 40-pin header of the BeagleY-AI:
-
-| Pin | BCM GPIO | Controller / Line | Mode | Function | Logic Level |
-|:---:|:---|:---|:---:|:---|:---|
-| **Pin 1** | `3.3V` | System 3.3V Rail | Power | VCC for MLX90640 & RC522 | 3.3V DC |
-| **Pin 2** | `5.0V` | System 5.0V Rail | Power | VCC for MQ7, MQ2, Flame & Relay | 5.0V DC |
-| **Pin 3** | `GPIO2` | `I2C1_SDA` | I2C | MLX90640 I2C Data | 3.3V |
-| **Pin 5** | `GPIO3` | `I2C1_SCL` | I2C | MLX90640 I2C Clock | 3.3V |
-| **Pin 7** | `GPIO4` | `gpiochip2 line 38` | In | PIR Exit Motion Detector | 3.3V Active-High |
-| **Pin 11** | `GPIO17` | `gpiochip3 line 8` | Out | RC522 RFID Chip Select (SDA) | Bitbang SPI |
-| **Pin 13** | `GPIO27` | `gpiochip2 line 33` | Out | RC522 RFID Serial Clock (SCK) | Bitbang SPI |
-| **Pin 15** | `GPIO22` | `gpiochip2 line 41` | Out | RC522 Master Out Slave In (MOSI) | Bitbang SPI |
-| **Pin 16** | `GPIO23` | `gpiochip1 line 7` | In | RC522 Master In Slave Out (MISO) | Bitbang SPI |
-| **Pin 18** | `GPIO24` | `gpiochip1 line 10` | Out | **Master Hazard Warning Buzzer** | **Active-Low (Pulls to GND)** |
-| **Pin 22** | `GPIO25` | `gpiochip2 line 42` | Out | RC522 RFID Hardware Reset (RST) | 3.3V Pulse |
-| **Pin 29** | `GPIO5` | `gpiochip3 line 15` | In | **MQ2 Flammable Gas / Smoke D0** | Active-Low / 3.3V |
-| **Pin 30** | `GND` | Ground Rail | Ground | Sprinkler Bus Ground Reference | 0V |
-| **Pin 31** | `GPIO6` | `gpiochip3 line 17` | Out | **Sprinkler Bus Bit 0 (LSB)** | **Active-Low (Pulls to GND)** |
-| **Pin 32** | `GPIO12` | `gpiochip3 line 16` | Out | **Sprinkler Bus Bit 1** | **Active-Low (Pulls to GND)** |
-| **Pin 33** | `GPIO13` | `gpiochip3 line 18` | Out | **Sprinkler Bus Bit 2** | **Active-Low (Pulls to GND)** |
-| **Pin 35** | `GPIO19` | `gpiochip3 line 12` | Out | **Sprinkler Bus Bit 3 (MSB)** | **Active-Low (Pulls to GND)** |
-| **Pin 36** | `GPIO16` | `gpiochip3 line 7` | In | **MQ7 Carbon Monoxide Gas D0** | Active-Low / 3.3V |
-| **Pin 37** | `GPIO26` | `gpiochip2 line 36` | In | **Optical Infrared Flame D0** | Active-Low / 3.3V |
-| **Pin 38** | `GPIO20` | `gpiochip3 line 10` | Out | **Fire Alarm / Extinguisher Actuator** | **Active-Low (Pulls to GND)** |
-| **Pin 40** | `GPIO21` | `gpiochip3 line 9` | Out | **Gas Hazard / Exhaust Fan Actuator** | **Active-Low (Pulls to GND)** |
-
-*(Refer to [docs/HARDWARE_SPEC.md](docs/HARDWARE_SPEC.md) for full electrical ratings and wiring diagrams).*
+    subgraph Cloud ["Cloud & Presentation"]
+        CORE -->|MQTT JSON over TLS| BROKER["EMQX Cloud Broker (:1883)"]
+        BROKER --> API["Express 5 API Server (:3000)"]
+        API -->|Socket.IO (<25ms)| WEB["React 19 Dashboard"]
+        WEB -->|ngrok Secure Tunnel| USER["Worldwide Operator Console"]
+    end
+```
 
 ---
 
-## 📊 4×4 Sprinkler Truth Table (Active-Low)
+## 40-Pin Header Connections
 
-The active-low binary bus directly addresses channels $0 \dots 15$ corresponding to zones $01 \dots 16$:
+Key connections on the BeagleY-AI 40-pin header:
 
-$$\text{Zone ID} = (r \times 4) + (4 - c), \quad \text{Channel} = \text{Zone ID} - 1$$
+| Group | Function | BeagleY Header Pin | SoC Pin / Line | Electrical Logic |
+|:---|:---|:---:|:---|:---|
+| **Thermal IR** | MLX90640 Data / Clock | **Pin 3, Pin 5** | `I2C1_SDA`, `I2C1_SCL` | 3.3V I2C (Bus 1 at 0x33) |
+| **RFID** | RC522 SPI Bus | **Pins 11, 13, 15, 16, 22** | `CS`, `SCK`, `MOSI`, `MISO`, `RST` | 3.3V Bitbang SPI |
+| **Sprinkler Bus** | 4-Bit Binary Address ($B_0 \dots B_3$) | **Pins 31, 32, 33, 35** | `GPIO6`, `12`, `13`, `19` | **Active-Low (Pulls to GND)** |
+| **Sensor Inputs** | Flame, MQ7, MQ2, PIR | **Pins 37, 36, 29, 7** | `GPIO26`, `16`, `5`, `4` | Digital Inputs |
+| **Hazard Outputs**| Fire, Gas, Buzzer Alarms | **Pins 38, 40, 18** | `GPIO20`, `21`, `24` | **Active-Low (Pulls to GND)** |
+| **Power & GND** | Logic Power & Ground | **Pins 1, 2, 6, 30, 34** | `3.3V`, `5V`, `GND` | System Power Rails |
 
-| Zone | Grid Position | Channel | Binary ($B_3 B_2 B_1 B_0$) | Pin 35 ($B_3$) | Pin 33 ($B_2$) | Pin 32 ($B_1$) | Pin 31 ($B_0$) |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Zone 01** | Row 0, Col 3 | `00` | `0000` | 3.3V (HIGH) | 3.3V (HIGH) | 3.3V (HIGH) | 3.3V (HIGH) |
-| **Zone 02** | Row 0, Col 2 | `01` | `0001` | 3.3V (HIGH) | 3.3V (HIGH) | 3.3V (HIGH) | **0.0V (GND)** |
-| **Zone 03** | Row 0, Col 1 | `02` | `0010` | 3.3V (HIGH) | 3.3V (HIGH) | **0.0V (GND)** | 3.3V (HIGH) |
-| **Zone 04** | Row 0, Col 0 | `03` | `0011` | 3.3V (HIGH) | 3.3V (HIGH) | **0.0V (GND)** | **0.0V (GND)** |
-| **Zone 05** | Row 1, Col 3 | `04` | `0100` | 3.3V (HIGH) | **0.0V (GND)** | 3.3V (HIGH) | 3.3V (HIGH) |
-| **Zone 06** | Row 1, Col 2 | `05` | `0101` | 3.3V (HIGH) | **0.0V (GND)** | 3.3V (HIGH) | **0.0V (GND)** |
-| **Zone 07** | Row 1, Col 1 | `06` | `0110` | 3.3V (HIGH) | **0.0V (GND)** | **0.0V (GND)** | 3.3V (HIGH) |
-| **Zone 08** | Row 1, Col 0 | `07` | `0111` | 3.3V (HIGH) | **0.0V (GND)** | **0.0V (GND)** | **0.0V (GND)** |
-| **Zone 09** | Row 2, Col 3 | `08` | `1000` | **0.0V (GND)** | 3.3V (HIGH) | 3.3V (HIGH) | 3.3V (HIGH) |
-| **Zone 10** | Row 2, Col 2 | `09` | `1001` | **0.0V (GND)** | 3.3V (HIGH) | 3.3V (HIGH) | **0.0V (GND)** |
-| **Zone 11** | Row 2, Col 1 | `10` | `1010` | **0.0V (GND)** | 3.3V (HIGH) | **0.0V (GND)** | 3.3V (HIGH) |
-| **Zone 12** | Row 2, Col 0 | `11` | `1011` | **0.0V (GND)** | 3.3V (HIGH) | **0.0V (GND)** | **0.0V (GND)** |
-| **Zone 13** | Row 3, Col 3 | `12` | `1100` | **0.0V (GND)** | **0.0V (GND)** | 3.3V (HIGH) | 3.3V (HIGH) |
-| **Zone 14** | Row 3, Col 2 | `13` | `1101` | **0.0V (GND)** | **0.0V (GND)** | 3.3V (HIGH) | **0.0V (GND)** |
-| **Zone 15** | Row 3, Col 1 | `14` | `1110` | **0.0V (GND)** | **0.0V (GND)** | **0.0V (GND)** | 3.3V (HIGH) |
-| **Zone 16** | Row 3, Col 0 | `15` | `1111` | **0.0V (GND)** | **0.0V (GND)** | **0.0V (GND)** | **0.0V (GND)** |
+*(See [docs/HARDWARE_SPEC.md](docs/HARDWARE_SPEC.md) for full electrical ratings and wiring details).*
 
 ---
 
-## 🚀 Quick Start & Deployment
+## Mirrored $4 \times 4$ Sprinkler Grid
 
-### 1. One-Click Automated System Launcher
-When connecting the BeagleY-AI over USB, run the automated connect script:
+The physical sprinkler nozzles are arranged in a mirrored grid to match warehouse quadrant plumbing:
+
+$$\begin{matrix} 04 & 03 & 02 & 01 \\ 08 & 07 & 06 & 05 \\ 12 & 11 & 10 & 09 \\ 16 & 15 & 14 & 13 \end{matrix}$$
+
+- **Coordinate Mapping**: For hotspot $(x, y)$ from the $24 \times 32$ thermal frame:
+  $$\text{col} = \min\left(3, \left\lfloor \frac{x}{8} \right\rfloor\right), \quad \text{row} = \min\left(3, \left\lfloor \frac{y}{6} \right\rfloor\right)$$
+  $$\text{Zone ID} = (\text{row} \times 4) + (4 - \text{col}), \quad \text{Channel} = \text{Zone ID} - 1 \quad (0 \le \text{Channel} \le 15)$$
+
+- **Truth Table Summary**:
+  - **Zone 01** (Top-Right): Channel `00` (`0000`) $\to$ All pins HIGH (`3.3V`)
+  - **Zone 04** (Top-Left): Channel `03` (`0011`) $\to$ Pins 31 & 32 LOW (`GND`), Pins 33 & 35 HIGH (`3.3V`)
+  - **Zone 16** (Bottom-Left): Channel `15` (`1111`) $\to$ All pins LOW (`GND`)
+
+*(See [docs/HARDWARE_SPEC.md](docs/HARDWARE_SPEC.md#5-mirrored-44-sprinkler-grid--active-low-truth-table) for the full 16-zone table).*
+
+---
+
+## Quickstart & Automated Deployment
+
+### The Single-Command Launcher
+Connect the BeagleY-AI via USB to your host computer and run:
 ```bash
 ./beagley/beagley-connect.sh
 ```
-This utility automatically:
-1. Detects BeagleY-AI hardware on USB (`192.168.7.2`).
-2. Configures dynamic iptables NAT and kernel IP forwarding on your host machine.
-3. Sets default gateway routes on BeagleY-AI to share internet access.
-4. Restarts `warehouse-publisher.service` to stream live telemetry to `broker.emqx.io`.
-5. Starts the Express backend server (`:3000`) and React frontend (`:5173`).
-6. Ensures the permanent ngrok tunnel (`carry-freehand-uninvited.ngrok-free.dev`) is active.
 
-### 2. Manual Installation
+**What this does automatically:**
+1. Verifies USB link (`192.168.7.2`).
+2. Detects the host network interface and enables iptables NAT and kernel IP forwarding so the BeagleY shares host internet.
+3. Sets default gateway routing tables on the BeagleY.
+4. Restarts `warehouse-publisher.service` to begin MQTT streaming.
+5. Starts the Express backend on `:3000` and Vite dev server on `:5173` (if not running).
+6. Starts the ngrok tunnel, exposing the live console at `carry-freehand-uninvited.ngrok-free.dev`.
 
+### Manual Build
 ```bash
 # Clone the repository
 git clone git@github.com:Pranso141/Warehouse-Fire-Safety-System.git
 cd Warehouse-Fire-Safety-System
 
-# Install all workspace dependencies
+# Install monorepo dependencies
 pnpm install
 
-# Build all monorepo artifacts
+# Compile all workspaces
 pnpm run build
 
-# Start the unified backend and frontend server
+# Start production server
 MQTT_URL="mqtt://broker.emqx.io:1883" RFID_ALLOWED_UIDS="5281A25C,5299945C" PORT=3000 pnpm start
 ```
 
 ---
 
-## 📜 Repository Structure
+## Repository Structure
 
 ```
 ├── beagley/                     # BeagleY-AI edge drivers & systemd services
-│   ├── warehouse_publisher.py   # Hardware acquisition, thermal hotspot & MQTT publisher
+│   ├── warehouse_publisher.py   # Sensor acquisition, thermal tracking & MQTT client
 │   ├── rc522_driver.py          # Native bitbang SPI driver for RC522 RFID reader
-│   └── beagley-connect.sh       # USB NAT orchestrator & multi-service launcher
-├── artifacts/                   # Core application monorepo workspaces
+│   └── beagley-connect.sh       # Automated system orchestrator & network bridge
+├── artifacts/                   # Core application workspaces
 │   ├── api-server/              # Express 5 backend with Socket.IO & MQTT bridge
 │   └── warehouse-fire-safety/   # React 19 monitoring console with FLIR Ironbow view
-├── docs/                        # Deep-dive documentation and specs
-│   ├── HARDWARE_SPEC.md         # 40-pin header reference, electrical ratings & truth tables
-│   ├── ARCHITECTURE.md          # Telemetry schemas, security state model & protocols
-│   └── assets/                  # High-resolution dashboard screenshots & schematics
-├── CHANGELOG.md                 # Complete historical engineering log & milestones
-├── package.json                 # Monorepo root configuration
-└── README.md                    # Main project showcase
+├── docs/                        # Technical documentation & schematics
+│   ├── HARDWARE_SPEC.md         # Electrical ratings, pinouts & truth tables
+│   ├── ARCHITECTURE.md          # Telemetry schemas, protocols & security states
+│   └── assets/                  # Live dashboard captures, testbench photos & schematics
+├── CHANGELOG.md                 # Complete development history & milestones
+└── README.md                    # Project documentation
 ```
 
 ---
 
-## 🛡️ License
+## License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the [MIT License](LICENSE).
