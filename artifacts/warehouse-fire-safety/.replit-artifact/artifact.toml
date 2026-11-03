@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Warehouse Fire Safety Dashboard"
+description = "A monitoring dashboard for warehouse fire detection, thermal sensor telemetry, RFID access, and sprinkler-zone status. Includes live MQTT/WebSocket monitoring when configured and a clearly labeled simulation mode."
+version = "1.0.0"
+id = "artifacts/warehouse-fire-safety"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23876
+
+[services.development]
+run = "pnpm --filter @workspace/warehouse-fire-safety run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/warehouse-fire-safety", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/warehouse-fire-safety/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23876"
+BASE_PATH = "/"
